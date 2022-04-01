@@ -1,0 +1,122 @@
+@startuml
+
+!include <logos/kafka>
+!include <logos/elasticsearch>
+!include <logos/nginx>
+!include <logos/redis>
+!include <logos/postgresql>
+!include <logos/flask>
+!include <logos/gunicorn>
+!include <logos/jaeger>
+!include <logos/django>
+!include <logos/kibana>
+!include <logos/python>
+
+skinparam actor {
+BorderColor black
+BackgroundColor Gold
+}
+skinparam database {
+BorderColor black
+BackgroundColor Aquamarine
+}
+
+actor/ Admin
+actor/ Staff
+actor User
+actor/ Developer
+actor/ Analytic
+
+title Схема архитектуры Онлайн-кинотеатр  TO_BE
+
+node "Админ-панель" as admin_panel {
+
+    component "<$nginx>" as nginx_admin
+    component "<$gunicorn>\nuWSGI web server" as gunicorn {
+    component "<$django>\nmovies-admin" as django
+    }
+    database "<$postgresql>\nmovies_database" as postgres_admin
+
+    nginx_admin <-down-> gunicorn
+    django <-right-> postgres_admin
+}
+
+node "Сервис Async API" as async_api {
+    component "<$nginx>" as nginx_async
+    component "<$kibana>\nAnalytics\nplatform" as kibana_async
+    component "<$gunicorn>\nuASGI web server" as uvicorn {
+    component "<img:FastAPI.png>\nAsync-API" as async_web_api
+    }
+    database "<$redis>\nCache" as redis_async
+    database "<$elasticsearch>\nSearch engine" as elastic_async
+
+
+    kibana_async <-down-> elastic_async
+    async_web_api <-down-> redis_async
+    uvicorn <-up-> nginx_async
+    elastic_async <-up-> [async_web_api]
+}
+
+node "Сервис авторизации" as auth {
+    component "<$nginx>" as nginx_auth
+    database "<$redis>\nCache" as redis_auth
+    database "<$postgresql>\nauth_database" as postgres_auth
+    component "<$gunicorn>\ngevent WSGIServer" as gevent {
+    component "<$flask>\n" as auth_api
+    }
+
+    redis_auth <-up-> [auth_api]
+    auth_api <-down-> postgres_auth
+    gevent <-up-> nginx_auth
+
+'    note bottom of redis_auth
+'    1. Выданные пользователям refresh-токены\n
+'    2. Blacklist отозванных access-токенов
+'    end note
+}
+
+node "ETL\nPostgresql -> ElasticSearch" {
+    component "<$python>\n ETL" as etl
+}
+
+node "Сервис\nраспределенной трассировки" as Jaeger {
+    component "<$jaeger>\n Jaeger" as jaeger
+}
+
+node "UGC сервис" as event_api {
+    component "<$nginx>" as nginx_event
+    component "OLTP" {
+    component "<$gunicorn>\nuASGI web server" as uvicorn1 {
+    component "<img:FastAPI.png>\nEvent-API" as async_event_api
+    }
+    queue "<$kafka>\nBroker events" as kafka
+    }
+    database "<img:clickhouse.png>\nAnalytic storage" as clickhouse
+    component "<$python>\n ETL" as etl_OLAP
+
+    async_web_api <-> redis_async
+    uvicorn1 <-> nginx_event
+    kafka <-u-> async_event_api
+    kafka <-l-> etl_OLAP
+    etl_OLAP <-l-> clickhouse
+}
+
+User <--> nginx_async
+User <..> nginx_auth
+User <..> nginx_event
+Staff <..> nginx_admin #blue;text:blue : управление контентом\nонлайн-кинотеатра
+Staff <..> nginx_auth #blue;text:blue : назначение ролей\nпользователям
+Admin <..> nginx_admin #red : назначение ролей\n сотрудникам
+Admin <..> kibana_async #red : мониторинг работы\nElasticSearch
+Admin <..> nginx_auth #red : управление ролями\nи назначение ролей\n сотрудникам
+Developer <.u.> jaeger
+Analytic <.u.> clickhouse
+
+postgres_admin <--> etl
+elastic_async <--> etl
+async_web_api <...> jaeger #line.dotted
+auth_api <...> jaeger #line.dotted
+async_event_api <...> jaeger #line.dotted
+etl_OLAP <...> jaeger #line.dotted
+
+@enduml
