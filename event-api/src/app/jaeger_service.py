@@ -13,7 +13,7 @@ def init_tracer(app: FastAPI):
         return
 
     trace.set_tracer_provider(
-        TracerProvider(resource=Resource.create({SERVICE_NAME: 'Async API Team8'}))
+        TracerProvider(resource=Resource.create({SERVICE_NAME: 'UGC-service Team3'}))
     )
     tracer_provider = trace.get_tracer_provider()
 

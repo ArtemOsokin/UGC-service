@@ -1,4 +1,6 @@
 import requests
+from app.database import db
+from app.settings.config import settings
 from flask import Flask, request
 from opentelemetry import trace
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
@@ -8,9 +10,6 @@ from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import Span, TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-
-from app.database import db
-from app.settings.config import settings
 
 
 def init_tracer(app: Flask):
