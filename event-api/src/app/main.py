@@ -39,6 +39,7 @@ async def startup():
     )(KafkaProducer)(
         bootstrap_servers=[f'{settings.KAFKA.HOST}:{settings.KAFKA.PORT}'],
         compression_type='gzip',
+
     )
 
 
