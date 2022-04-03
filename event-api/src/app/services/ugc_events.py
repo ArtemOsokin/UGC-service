@@ -30,7 +30,7 @@ class FilmUGCService(AbstractService):
         logger.info(message.json())
         key = f'{message.user_id}_{message.film_id}'
         event_message = orjson.dumps(message.dict())
-        event_topic = message.topic
+        event_topic = message._topic
         result = self.storage.send(event_topic, key.encode(), event_message)
         if result:
             logger.info(f'Записано сообщение {event_message} в топик {event_topic}')
