@@ -18,10 +18,10 @@ class FilmEvents(ABC, ORJSONModel):
         title='Уникальный идентификатор пользователя',
         description='Уникальный идентификатор пользователя',
     )
-    topic: str = Field(
+    _topic: str = Field(
         ..., title='Имя топика', description='Имя топика Kafka для записи события'
     )
-    created_at: datetime = Field(
+    _created_at: datetime = Field(
         datetime.utcnow(), title='Время создания', description='Время создания события'
     )
 
@@ -30,7 +30,7 @@ class FilmBookmark(FilmEvents):
     add_to_bookmark: bool = Field(
         True, title='Добавлено в закладки', description='Статус добавления фильма в закладки'
     )
-    topic = 'films_bookmarks'
+    _topic = 'films_bookmarks'
 
 
 class FilmFeedback(FilmEvents):
@@ -45,7 +45,7 @@ class FilmFeedback(FilmEvents):
         title='Отметка "Нравиться"',
         description='Статус установки отметки "Нравиться" пользователем',
     )
-    topic = 'films_feedbacks'
+    _topic = 'films_feedbacks'
 
 
 class FilmProgress(FilmEvents):
@@ -60,4 +60,4 @@ class FilmProgress(FilmEvents):
     watched: bool = Field(
         False, title='Фильм просмотрен', description='Статус завершения просмотра фильма'
     )
-    topic = 'films_progress'
+    _topic = 'films_progress'
