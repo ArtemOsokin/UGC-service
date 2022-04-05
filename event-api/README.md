@@ -59,3 +59,20 @@ for msg in consumer:
 - films_bookmarks, 2 partition
 - films_feedbacks, 2 partition
 - films_progress, 2 partition
+6. Получить SSL сертификат для подключения к KAFKA из скриптов или IDE можно следующим образом:
+```shell
+для Linux(Bash)
+sudo mkdir -p /usr/local/share/ca-certificates/Yandex && \
+sudo wget "https://storage.yandexcloud.net/cloud-certs/CA.pem" -O /usr/local/share/ca-certificates/Yandex/YandexCA.crt && \
+sudo chmod 655 /usr/local/share/ca-certificates/Yandex/YandexCA.crt
+
+для Windows(PowerShell)
+mkdir $HOME\.kafka; curl.exe -o $HOME\.kafka\YandexCA.crt https://storage.yandexcloud.net/cloud-certs/CA.pem
+```
+Cертификат YandexCA.crt будет расположен директории:
+
+`/usr/local/share/ca-certificates/Yandex/` для Ubuntu;
+`$HOME\.kafka\` для Windows.
+
+В контейнере сервиса event-api сертификат скачивается при создании контейнера и располагается по пути:
+`/usr/local/share/ca-certificates/Yandex/YandexCA.crt`
