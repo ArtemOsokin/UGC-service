@@ -1,4 +1,5 @@
 import logging
+import os
 from logging import config as logging_config
 
 import backoff
@@ -29,18 +30,34 @@ init_tracer(app)
 
 @app.on_event('startup')
 async def startup():
-    kafka_storage.kafka_producer = backoff.on_exception(
-        wait_gen=backoff.expo,
-        max_tries=settings.BACKOFF.RETRIES,
-        max_time=settings.BACKOFF.MAX_TIME,
-        exception=Exception,
-        on_backoff=backoff_hdlr,
-        on_success=backoff_hdlr_success,
-    )(KafkaProducer)(
-        bootstrap_servers=[f'{settings.KAFKA.HOST}:{settings.KAFKA.PORT}'],
-        compression_type='gzip',
-
-    )
+    if not settings.KAFKA.RUN_IN_YANDEX_CLOUD:
+        kafka_storage.kafka_producer = backoff.on_exception(
+            wait_gen=backoff.expo,
+            max_tries=settings.BACKOFF.RETRIES,
+            max_time=settings.BACKOFF.MAX_TIME,
+            exception=Exception,
+            on_backoff=backoff_hdlr,
+            on_success=backoff_hdlr_success,
+        )(KafkaProducer)(
+            bootstrap_servers=[f'{settings.KAFKA.HOST}:{settings.KAFKA.PORT}'],
+            compression_type='gzip',
+        )
+    else:
+        kafka_storage.kafka_producer = backoff.on_exception(
+            wait_gen=backoff.expo,
+            max_tries=settings.BACKOFF.RETRIES,
+            max_time=settings.BACKOFF.MAX_TIME,
+            exception=Exception,
+            on_backoff=backoff_hdlr,
+            on_success=backoff_hdlr_success,
+        )(KafkaProducer)(
+            bootstrap_servers=[f'{settings.KAFKA.HOST_YC}:{settings.KAFKA.PORT_YC}'],
+            security_protocol=settings.KAFKA.SECURITY_PROTOCOL,
+            sasl_mechanism=settings.KAFKA.SASL_MECHANISM,
+            sasl_plain_password=settings.KAFKA.PRODUCER_PASSWORD,
+            sasl_plain_username=settings.KAFKA.PRODUCER_USERNAME,
+            ssl_cafile=settings.KAFKA.PATH_CERTIFICATE,
+        )
 
 
 @app.on_event('shutdown')

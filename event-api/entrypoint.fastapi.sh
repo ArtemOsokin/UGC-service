@@ -1,8 +1,9 @@
 #!/bin/sh
 
-if [ "$SETTINGS" = "dev" ]
+if [ "$KAFKA_RUN_IN_YANDEX_CLOUD" = "False" ]
 then
     echo "Waiting for broker Kafka..."
+    echo $KAFKA_RUN_IN_YANDEX_CLOUD
     while ! nc -z $KAFKA_HOST $KAFKA_PORT; do
       sleep 0.1
     done

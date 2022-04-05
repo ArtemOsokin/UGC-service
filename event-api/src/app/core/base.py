@@ -31,8 +31,16 @@ class AuthSettings(BaseSettings):
 
 
 class KafkaSettings(BaseSettings):
-    HOST: str = Field('127.0.0.1', description='адрес хоста брокера Kafka')
-    PORT: int = Field(9092, description='номер порта брокера Kafka')
+    HOST: str = Field('127.0.0.1', description='Адрес хоста брокера Kafka')
+    PORT: int = Field(9092, description='Номер порта брокера Kafka')
+    RUN_IN_YANDEX_CLOUD: bool = Field(False, description='KAFKA запущена на кластере Яндекс.Облако')
+    HOST_YC: str = Field('127.0.0.1', description='FQDN хоста-брокера')
+    PORT_YC: int = Field(9091, description='Номер порта брокера Kafka')
+    PRODUCER_PASSWORD: str = Field('password', description='Пароль для роли Producer на хосте-брокере KAFKA в Яндекс.Облако')
+    PRODUCER_USERNAME: str = Field('kafka_producer', description='Имя роли Producer на хосте-брокере KAFKA в Яндекс.Облако')
+    SECURITY_PROTOCOL: str = Field('SASL_SSL', description='Тип протокола безопасности')
+    SASL_MECHANISM: str = Field('SCRAM-SHA-512', description='Механизм безопасности')
+    PATH_CERTIFICATE: str = Field('', description='Путь к SSL сертификату')
 
     class Config:
         env_prefix = 'KAFKA_'
