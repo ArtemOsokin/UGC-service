@@ -1,10 +1,11 @@
-## Запуск сервиса event-api (UGC-service)
+## Запуск сервиса event-api (UGC-service) c KAFKA локально
 
 _Все команды в терминале выполняются в каталоге UGC-service/event-api._
 
 1. Переименовать файл .env.sample в .env для dev (переменная SETTINGS=dev). 
 Изменить при необходимости значения переменных окружения (необязательно).
-2. Поднять проект в docker-compose:
+2. Установить значение переменной окружения `KAFKA_RUN_IN_YANDEX_CLOUD=False`
+3. Поднять проект в docker-compose:
 ```shell
 docker-compose up --build -d
 ```
@@ -23,3 +24,38 @@ http://127.0.0.1:9021/clusters
 ```http request
 http://127.0.0.1:16686/search
 ```
+
+## Запуск сервиса event-api (UGC-service) с кластером KAFKA в Яндекc.Облако
+
+1. Установить значение KAFKA_RUN_IN_YANDEX_CLOUD=True в файле .env
+2. Поднять проект в docker-compose:
+```shell
+docker-compose -f docker-compose-yc.yaml up --build -d
+```
+3. Документация openapi сервера доступна по адресу:
+```http request
+http://127.0.0.1/api/openapi
+```
+4. Параметры Consumer для чтения топиков из кластера KAFKA:
+```python
+from kafka import KafkaConsumer
+
+consumer = KafkaConsumer(
+    'films_bookmarks',  # Имя топика для чтения
+    bootstrap_servers='rc1b-dt0p7ntrbdum3iqb.mdb.yandexcloud.net:9091',  # FQDN хоста-брокера
+    security_protocol="SASL_SSL",
+    sasl_mechanism="SCRAM-SHA-512",
+    sasl_plain_password='kafka_consumer42#',  # Пароль для Consumer
+    sasl_plain_username='kafka_consumer',  # Имя роли с правами на чтение топиков
+    ssl_cafile="C:/Users/User/.kafka/YandexCA.crt")  # Путь к сертификату SSL
+
+print("ready")
+
+for msg in consumer:
+    print(msg.key.decode("utf-8") + ":" + msg.value.decode("utf-8"))
+```
+Приведенный скрипт после запуска будет непрерывно считывать новые сообщения из заданного топика и печатать их в консоль.
+5. На кластере KAFKA настроены следующие топики:
+- films_bookmarks, 2 partition
+- films_feedbacks, 2 partition
+- films_progress, 2 partition
