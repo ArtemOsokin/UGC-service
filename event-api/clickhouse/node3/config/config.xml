@@ -8,8 +8,8 @@
     </logger>
 
     <kafka>
-        <sasl_username>kafka_consumer</sasl_username>
-        <sasl_password>kafka_consumer42#</sasl_password>
+        <sasl_username from_env="KAFKA_CONSUMER_USERNAME"/>
+        <sasl_password from_env="KAFKA_CONSUMER_PASSWORD"/>
         <security_protocol>sasl_ssl</security_protocol>
         <sasl_mechanisms>SCRAM-SHA-512</sasl_mechanisms>
         <ssl_ca_location>/tmp/YandexCA.crt</ssl_ca_location>
@@ -45,25 +45,27 @@
     <remote_servers>
         <ugc_service_cluster>
             <shard>
+                <internal_replication>true</internal_replication>
                 <replica>
-                    <default_database>shard</default_database>
+                    <default_database>db_shard1</default_database>
                     <host>clickhouse-node1</host>
                     <port>9000</port>
                 </replica>
                 <replica>
-                    <default_database>replica</default_database>
+                    <default_database>db_shard1</default_database>
                     <host>clickhouse-node2</host>
                     <port>9000</port>
                 </replica>
             </shard>
             <shard>
+                <internal_replication>true</internal_replication>
                 <replica>
-                    <default_database>shard</default_database>
+                    <default_database>db_shard2</default_database>
                     <host>clickhouse-node3</host>
                     <port>9000</port>
                 </replica>
                 <replica>
-                    <default_database>replica</default_database>
+                    <default_database>db_shard2</default_database>
                     <host>clickhouse-node4</host>
                     <port>9000</port>
                 </replica>
@@ -80,8 +82,9 @@
 
     <macros>
         <cluster>ugc_service_cluster</cluster>
-        <shard>2</shard>
-        <replica>clickhouse-node3</replica>
+        <database>db_shard2</database>
+        <shard>s2</shard>
+        <replica>ugc_s2_r1</replica>
     </macros>
 
     <distributed_ddl>

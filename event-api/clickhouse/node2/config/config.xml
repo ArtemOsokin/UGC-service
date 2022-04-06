@@ -37,25 +37,27 @@
     <remote_servers>
         <ugc_service_cluster>
             <shard>
+                <internal_replication>true</internal_replication>
                 <replica>
-                    <default_database>shard</default_database>
+                    <default_database>db_shard1</default_database>
                     <host>clickhouse-node1</host>
                     <port>9000</port>
                 </replica>
                 <replica>
-                    <default_database>replica</default_database>
+                    <default_database>db_shard1</default_database>
                     <host>clickhouse-node2</host>
                     <port>9000</port>
                 </replica>
             </shard>
             <shard>
+                <internal_replication>true</internal_replication>
                 <replica>
-                    <default_database>shard</default_database>
+                    <default_database>db_shard2</default_database>
                     <host>clickhouse-node3</host>
                     <port>9000</port>
                 </replica>
                 <replica>
-                    <default_database>replica</default_database>
+                    <default_database>db_shard2</default_database>
                     <host>clickhouse-node4</host>
                     <port>9000</port>
                 </replica>
@@ -72,8 +74,9 @@
 
     <macros>
         <cluster>ugc_service_cluster</cluster>
-        <shard>1</shard>
-        <replica>clickhouse-node2</replica>
+        <database>db_shard1</database>
+        <shard>s1</shard>
+        <replica>ugc_s1_r2</replica>
     </macros>
 
     <distributed_ddl>
