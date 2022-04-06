@@ -56,9 +56,9 @@ for msg in consumer:
 ```
 Приведенный скрипт после запуска будет непрерывно считывать новые сообщения из заданного топика и печатать их в консоль.
 5. На кластере KAFKA настроены следующие топики:
-- films_bookmarks, 2 partition
-- films_feedbacks, 2 partition
-- films_progress, 2 partition
+- films_bookmarks, 2 partitions
+- films_feedbacks, 2 partitions
+- films_progress, 2 partitions
 6. Получить SSL сертификат для подключения к KAFKA из скриптов или IDE можно следующим образом:
 ```shell
 для Linux(Bash)
