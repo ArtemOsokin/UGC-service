@@ -101,3 +101,4 @@ data/**
 .env.prod
 .env.dev.db
 postgres_to_es/etl_services/state.json
+/event-api/.env.ch
