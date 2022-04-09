@@ -43,7 +43,7 @@ class FilmFeedback(FilmEvents):
     like_it: bool = Field(
         False,
         title='Отметка "Нравиться"',
-        description='Статус установки отметки "Нравиться" пользователем',
+        description='Статус установки отметки "Нравится" пользователем',
     )
     _topic = 'films_feedbacks'
 
