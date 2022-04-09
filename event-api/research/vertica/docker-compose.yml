@@ -1,0 +1,17 @@
+version: '3.5'
+
+services:
+
+  vertica:
+    image: jbfavre/vertica:latest
+    container_name: vertica
+    ports:
+      - "5433:5433"
+
+  python:
+    build: ./
+    container_name: python
+    ports:
+      - '8888:8888'
+    volumes:
+      - ./data:/user-data
