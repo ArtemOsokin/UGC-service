@@ -1,9 +1,12 @@
 import logging
-import os
 from logging import config as logging_config
 
 import backoff
 import uvicorn as uvicorn
+from fastapi import Depends, FastAPI
+from fastapi.responses import ORJSONResponse
+from kafka import KafkaProducer
+
 from app.api.v1 import ugc_events
 from app.core.backoff_handler import backoff_hdlr, backoff_hdlr_success
 from app.core.config import settings
@@ -11,9 +14,6 @@ from app.core.logger import LOGGING
 from app.core.oauth import decode_jwt
 from app.db import kafka_storage
 from app.jaeger_service import init_tracer
-from fastapi import Depends, FastAPI
-from fastapi.responses import ORJSONResponse
-from kafka import KafkaProducer
 
 logging_config.dictConfig(LOGGING)
 

@@ -1,12 +1,13 @@
 from logging import getLogger
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException
+from starlette import status
+
 from app.core.oauth import get_user_id
 from app.db.kafka_storage import KafkaStorageError
 from app.models.ugc_events import FilmBookmark, FilmFeedback, FilmProgress
 from app.services.ugc_events import FilmUGCService, get_film_ugc_service
-from fastapi import APIRouter, Depends, HTTPException
-from starlette import status
 
 logger = getLogger(__name__)
 

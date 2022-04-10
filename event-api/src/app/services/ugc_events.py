@@ -3,9 +3,10 @@ from functools import lru_cache
 from logging import getLogger
 
 import orjson
+from fastapi import Depends
+
 from app.db.kafka_storage import AbstractStorage, get_storage
 from app.models.ugc_events import FilmEvents
-from fastapi import Depends
 
 logger = getLogger(__name__)
 

@@ -1,11 +1,12 @@
 from uuid import UUID
 
-from app.core.config import settings
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel, ValidationError
 from starlette import status
+
+from app.core.config import settings
 
 bearer = HTTPBearer()
 

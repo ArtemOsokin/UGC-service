@@ -1,6 +1,8 @@
+import json
+
 import pytest
 from starlette import status
-import json
+
 pytestmark = pytest.mark.asyncio
 
 
