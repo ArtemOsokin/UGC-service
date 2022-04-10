@@ -3,8 +3,9 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from app.models.base import ORJSONModel
 from pydantic import Field
+
+from app.models.base import ORJSONModel
 
 
 class FilmEvents(ABC, ORJSONModel):

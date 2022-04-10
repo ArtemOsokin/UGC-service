@@ -1,11 +1,10 @@
 import asyncio
+import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urljoin
-from kafka import KafkaConsumer
-import json
 
 import aiohttp
 import orjson
@@ -15,6 +14,7 @@ from functional.settings import (SERVICE_URL, TEST_SRC_DIR_PATH,
                                  test_settings)
 from httpx import AsyncClient
 from jose import jwt
+from kafka import KafkaConsumer
 from multidict import CIMultiDictProxy
 
 from app.core.config import settings
