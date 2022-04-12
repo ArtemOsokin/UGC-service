@@ -12,9 +12,8 @@ services:
     image: yandex/clickhouse-server:20.4
     container_name: clickhouse-node1
     hostname: clickhouse-node1
-    environment:
-      - KAFKA_CONSUMER_PASSWORD=kafka_consumer42@
-      - KAFKA_CONSUMER_USERNAME=kafka_consumer
+    env_file:
+      - .env-ch
     ports:
       - "8123:8123"
       - "9000:9000"
@@ -43,9 +42,8 @@ services:
     image: yandex/clickhouse-server:20.4
     container_name: clickhouse-node3
     hostname: clickhouse-node3
-    environment:
-      - KAFKA_CONSUMER_PASSWORD=kafka_consumer42@
-      - KAFKA_CONSUMER_USERNAME=kafka_consumer
+    env_file:
+      - .env-ch
     volumes:
       - ./clickhouse/node3/config:/etc/clickhouse-server
       - ./clickhouse/node3/script:/docker-entrypoint-initdb.d

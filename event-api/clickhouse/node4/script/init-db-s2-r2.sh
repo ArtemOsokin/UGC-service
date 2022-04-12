@@ -21,7 +21,7 @@ clickhouse client -n <<-EOSQL
       add_to_bookmark UInt8,
       key String,
       timestamp DateTime
-    ) ENGINE = Distributed('ugc_service_cluster', '', films_bookmarks, rand());
+    ) ENGINE = Distributed('ugc_service_cluster', '', films_bookmarks, intHash64(user_id));
 
 
 
@@ -46,7 +46,7 @@ clickhouse client -n <<-EOSQL
       watched UInt8,
       key String,
       timestamp DateTime
-      ) ENGINE = Distributed('ugc_service_cluster', '', films_progress, rand());
+      ) ENGINE = Distributed('ugc_service_cluster', '', films_progress, intHash64(user_id));
 
 
   CREATE TABLE IF NOT EXISTS db_shard2.films_feedbacks(
@@ -70,7 +70,7 @@ clickhouse client -n <<-EOSQL
       like_it UInt8,
       key String,
       timestamp DateTime
-      ) ENGINE = Distributed('ugc_service_cluster', '', films_feedbacks, rand());
+      ) ENGINE = Distributed('ugc_service_cluster', '', films_feedbacks, intHash64(user_id));
 
 
 EOSQL

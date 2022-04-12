@@ -41,6 +41,8 @@ class KafkaSettings(BaseSettings):
     SECURITY_PROTOCOL: str = Field('SASL_SSL', description='Тип протокола безопасности')
     SASL_MECHANISM: str = Field('SCRAM-SHA-512', description='Механизм безопасности')
     PATH_CERTIFICATE: str = Field('', description='Путь к SSL сертификату')
+    PRODUCER_TIMEOUT_MS: int = Field(3000, description='Таймаут запроса KafkaProducer')
+    CLIENT_ID: str = Field('aiokafka-producer-film_ugc_events', description='Имя клиента Kafka-Producer')
 
     class Config:
         env_prefix = 'KAFKA_'

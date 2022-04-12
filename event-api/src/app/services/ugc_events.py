@@ -27,14 +27,15 @@ class FilmUGCService(AbstractService):
         self.name = 'film_ugc_events'
         super().__init__(*args, **kwargs)
 
-    def post(self, message: FilmEvents):
+    async def post(self, message: FilmEvents):
         logger.info(message.json())
         key = f'{message.user_id}_{message.film_id}'
         event_message = orjson.dumps(message.dict())
         event_topic = message._topic
-        result = self.storage.send(event_topic, key.encode(), event_message)
-        if result:
-            logger.info(f'Записано сообщение {event_message} в топик {event_topic}')
+        try:
+            await self.storage.send(event_topic, key.encode(), event_message)
+        except Exception as err:
+            raise err
 
 
 @lru_cache()
