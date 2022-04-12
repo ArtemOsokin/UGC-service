@@ -30,7 +30,7 @@ clickhouse client -n <<-EOSQL
       add_to_bookmark UInt8,
       key String,
       timestamp DateTime
-    ) ENGINE = Distributed('ugc_service_cluster', '', films_bookmarks, rand());
+    ) ENGINE = Distributed('ugc_service_cluster', '', films_bookmarks, intHash64(user_id));
 
   CREATE MATERIALIZED VIEW IF NOT EXISTS default.films_bookmarks_mv TO db_shard2.films_bookmarks AS
       SELECT *, _timestamp as timestamp, _key as key
@@ -70,7 +70,7 @@ clickhouse client -n <<-EOSQL
       watched UInt8,
       key String,
       timestamp DateTime
-      ) ENGINE = Distributed('ugc_service_cluster', '', films_progress, rand());
+      ) ENGINE = Distributed('ugc_service_cluster', '', films_progress, intHash64(user_id));
 
   CREATE MATERIALIZED VIEW IF NOT EXISTS default.films_progress_mv TO db_shard2.films_progress AS
       SELECT *, _timestamp as timestamp, _key as key
@@ -109,7 +109,7 @@ clickhouse client -n <<-EOSQL
       like_it UInt8,
       key String,
       timestamp DateTime
-      ) ENGINE = Distributed('ugc_service_cluster', '', films_feedbacks, rand());
+      ) ENGINE = Distributed('ugc_service_cluster', '', films_feedbacks, intHash64(user_id));
 
   CREATE MATERIALIZED VIEW IF NOT EXISTS default.films_feedbacks_mv TO db_shard2.films_feedbacks AS
       SELECT *, _timestamp as timestamp, _key as key

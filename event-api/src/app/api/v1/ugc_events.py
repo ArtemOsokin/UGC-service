@@ -20,14 +20,14 @@ router = APIRouter()
     description='Фиксация события по добавлению пользователем фильма в закладки',
     operation_id='addFilmBookmark',
 )
-def bookmark_add(
+async def bookmark_add(
     bookmark: FilmBookmark,
     film_ugc_service: FilmUGCService = Depends(get_film_ugc_service),
     user_id: UUID = Depends(get_user_id),
 ):
     bookmark.user_id = user_id
     try:
-        film_ugc_service.post(bookmark)
+        await film_ugc_service.post(bookmark)
         return status.HTTP_202_ACCEPTED
     except KafkaStorageError:
         raise HTTPException(
@@ -41,14 +41,14 @@ def bookmark_add(
     description='Фиксация событий оценки пользователем фильма - лайки, отзывы, пользовательский рейтинг фильма',
     operation_id='addFilmFeedback',
 )
-def feedback_add(
+async def feedback_add(
     feedback: FilmFeedback,
     film_ugc_service: FilmUGCService = Depends(get_film_ugc_service),
     user_id: UUID = Depends(get_user_id),
 ):
     feedback.user_id = user_id
     try:
-        film_ugc_service.post(feedback)
+        await film_ugc_service.post(feedback)
         return status.HTTP_202_ACCEPTED
     except KafkaStorageError:
         raise HTTPException(
@@ -62,14 +62,14 @@ def feedback_add(
     description='Фиксация прогресса просмотра фильма и языка просмотра',
     operation_id='addFilmProgress',
 )
-def progress_add(
+async def progress_add(
     progress: FilmProgress,
     film_ugc_service: FilmUGCService = Depends(get_film_ugc_service),
     user_id: UUID = Depends(get_user_id),
 ):
     progress.user_id = user_id
     try:
-        film_ugc_service.post(progress)
+        await film_ugc_service.post(progress)
         return status.HTTP_202_ACCEPTED
     except KafkaStorageError:
         raise HTTPException(
