@@ -3,9 +3,9 @@ name: ugc-service
 
 on:
   push:
-    branches: [ main ]
+    branches: [ ci_cd ]
   pull_request:
-    branches: [ main ]
+    branches: [ ci_cd ]
 
 jobs:
   build:
