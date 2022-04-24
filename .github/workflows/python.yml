@@ -35,3 +35,4 @@ jobs:
         with:
           name: Linter HTML report
           path: flake-report
+          if-no-files-found: ignore
