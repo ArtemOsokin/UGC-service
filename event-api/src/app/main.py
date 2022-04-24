@@ -42,6 +42,7 @@ app.include_router(
     dependencies=[Depends(decode_jwt)],
 )
 
+print(a)
 
 if __name__ == '__main__':
     uvicorn.run(
