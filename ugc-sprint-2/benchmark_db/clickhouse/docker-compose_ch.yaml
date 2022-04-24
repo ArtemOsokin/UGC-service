@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  zookeeper-clickhouse:
+    image: zookeeper:3.5
+    container_name: zookeeper-clickhouse
+    hostname: zookeeper
+    networks:
+      - backend_network
+
+  clickhouse-node1:
+    image: yandex/clickhouse-server:20.4
+    container_name: clickhouse-node1
+    hostname: clickhouse-node1
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - ./clickhouse/node1/config:/etc/clickhouse-server
+      - ./clickhouse/node1/script:/docker-entrypoint-initdb.d
+    depends_on:
+      - zookeeper-clickhouse
+    networks:
+      - backend_network
+
+  clickhouse-node2:
+    image: yandex/clickhouse-server:20.4
+    container_name: clickhouse-node2
+    hostname: clickhouse-node2
+    volumes:
+      - ./clickhouse/node2/config:/etc/clickhouse-server
+      - ./clickhouse/node2/script:/docker-entrypoint-initdb.d
+    depends_on:
+      - zookeeper-clickhouse
+    networks:
+      - backend_network
+
+  clickhouse-node3:
+    image: yandex/clickhouse-server:20.4
+    container_name: clickhouse-node3
+    hostname: clickhouse-node3
+    volumes:
+      - ./clickhouse/node3/config:/etc/clickhouse-server
+      - ./clickhouse/node3/script:/docker-entrypoint-initdb.d
+    depends_on:
+      - zookeeper-clickhouse
+    networks:
+      - backend_network
+
+  clickhouse-node4:
+    image: yandex/clickhouse-server:20.4
+    container_name: clickhouse-node4
+    hostname: clickhouse-node4
+    volumes:
+      - ./clickhouse/node4/config:/etc/clickhouse-server
+      - ./clickhouse/node4/script:/docker-entrypoint-initdb.d
+    depends_on:
+      - zookeeper-clickhouse
+    networks:
+      - backend_network
+
+networks:
+  backend_network:
