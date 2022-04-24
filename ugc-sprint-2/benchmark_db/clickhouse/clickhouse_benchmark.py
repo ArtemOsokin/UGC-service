@@ -3,42 +3,47 @@ import logging
 import random
 from logging import config as logging_config
 
+import aioch
+from benchmark_db.clickhouse.settings import settings
 from benchmark_db.logger import LOGGING_CONFIG
-from benchmark_db.mongodb.mongodb_connect import (motor_bookmarks,
-                                                  motor_client, motor_db,
-                                                  motor_film_likes,
-                                                  motor_review_likes,
-                                                  motor_reviews)
-from benchmark_db.mongodb.settings import settings
 from benchmark_db.timer import Timer
 from benchmark_db.utils import ping_host
-
-COUNT_RUN_QUERY = 1000  # Количество запросов к базе данных для оценки среднего времени
 
 logging_config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
 
+COUNT_RUN_QUERY = 1000  # Количество запросов к базе данных для оценки среднего времени
 
-hosts = list(settings.MONGO.DB_HOSTS.split(','))
+hosts = settings.CH.HOSTS
 
 
 async def benchmark_get_list_bookmarks(count: int = 100) -> float:
-    """Функция оценки среднего времени получения списка закладок (списка film_id добавленных в закладки фильмов).
+    """Функция оценки времени получения списка закладок (списка film_id добавленных в закладки фильмов)
     :param count: Количество запросов в базу данных для вычисления среднего значения времени запроса.
     :return: Среднее значение времени выполнения запроса.
     """
+    client = aioch.Client(
+        host=settings.CH.HOSTS[0],
+        port=settings.CH.PORT,
+        user=settings.CH.USER,
+        password=settings.CH.PASSWORD,
+        ca_certs=settings.CH.CACERT,
+        secure=True,
+    )
     logger.info('Start process measurement of benchmarks get list bookmarks')
     func_timer = Timer('get_list_bookmarks', logger=None)
     func_timer.start()
-    # Формируем список user_id в количестве count элементов произвольной выборкой из вспомогательной
-    # коллекции, содержащей перечень всех user_id коллекции ugc-movies.bookmarks.
-    count_docs = await motor_db.bookmarks_user_ids.count_documents({})
-    cursor = motor_db.bookmarks_user_ids.find(
-        {}, skip=random.randrange(0, count_docs - count, 1), limit=count
-    )
+    # Определяем общее количество уникальных пользователей, имеющих фильмы в закладках и создаем список
+    # из равномерно распределенных значений user_id общим количеством равным count.
+    total_user_id = await client.execute('SELECT count(DISTINCT user_id) FROM films_bookmarks')
+    logger.info(total_user_id)
+    step = total_user_id[0][0] // count
     list_user_id = []
-    async for doc in cursor:
-        list_user_id.append(doc['_id'])
+    for offset in range(0, count * step, step):
+        user_id = await client.execute(
+            f'SELECT user_id FROM films_bookmarks LIMIT 1 OFFSET {offset}'
+        )
+        list_user_id.append(user_id[0][0])
     logger.debug('Got following list user_id: %s', list_user_id)
     # По полученному списку значений user_id выполняем запросы к базе данных и оцениваем среднее время
     # выполнения запросов
@@ -46,9 +51,9 @@ async def benchmark_get_list_bookmarks(count: int = 100) -> float:
     counter = 0
     logger.debug('Start iterating on list user_id...')
     for user_id in list_user_id:
-        query = {'user_id': user_id}
+        query = f"SELECT film_id FROM films_bookmarks WHERE user_id == '{user_id}'"
         timer.start()
-        result = await motor_bookmarks.find_one(query, {'bookmarks.film_id': 1, '_id': 0})
+        result = await client.execute(query)
         elapsed_time = timer.stop()
         counter += 1
         logger.debug(
@@ -76,29 +81,32 @@ async def benchmark_get_average_rating(count: int = 100) -> float:
     :param count: Количество запросов в базу данных для вычисления среднего значения времени запроса.
     :return: Среднее значение времени выполнения запроса.
     """
+    client = aioch.Client(
+        host=settings.CH.HOSTS[1],
+        port=settings.CH.PORT,
+        user=settings.CH.USER,
+        password=settings.CH.PASSWORD,
+        ca_certs=settings.CH.CACERT,
+        secure=True,
+    )
     logger.info('Start process measurement of benchmarks get average rating movies')
     func_timer = Timer('get_average_rating', logger=None)
     func_timer.start()
-    list_film_id = await motor_film_likes.distinct('film_id')
+    list_film_id = await client.execute('SELECT DISTINCT film_id FROM films_likes')
     logger.debug('Got following list film_id: %s', list_film_id)
     timer = Timer('average_rating', logger=None)
     counter = 0
     logger.debug('Start iterating on list film_id...')
-    for film_id in random.choices(list_film_id, k=count):
-        pipeline = [
-            {'$match': {'film_id': film_id}},
-            {
-                '$group': {
-                    '_id': '$film_id',
-                    'average_rating': {'$avg': '$user_rating'},
-                    'count_likes': {'$sum': {'$toInt': '$is_like'}},
-                    'count_dislikes': {'$sum': {'$toInt': '$is_dislike'}},
-                    'count_scores': {'$sum': 1},
-                }
-            },
-        ]
+    for film_id, *_ in random.choices(list_film_id, k=count):
+        query = (
+            f'SELECT '
+            f"avgIf(user_rating, film_id ='{film_id}') AS average_rating,"
+            f"sumIf(is_like, film_id ='{film_id}') AS count_likes,"
+            f"sumIf(is_dislike, film_id = '{film_id}') AS count_dislikes "
+            f'FROM films_likes'
+        )
         timer.start()
-        result = await motor_film_likes.aggregate(pipeline).to_list(None)
+        result = await client.execute(query)
         elapsed_time = timer.stop()
         counter += 1
         logger.debug(
@@ -125,18 +133,28 @@ async def benchmark_get_list_favorite_films(count: int = 100) -> float:
     :param count: Количество запросов в базу данных для вычисления среднего значения времени запроса.
     :return: Среднее значение времени выполнения запроса.
     """
+    client = aioch.Client(
+        host=settings.CH.HOSTS[2],
+        port=settings.CH.PORT,
+        user=settings.CH.USER,
+        password=settings.CH.PASSWORD,
+        ca_certs=settings.CH.CACERT,
+        secure=True,
+    )
     logger.info('Start process measurement of benchmarks get list favorite films')
     func_timer = Timer('get_list_favorite_films', logger=None)
     func_timer.start()
-    # Формируем список user_id в количестве count элементов произвольной выборкой из вспомогательной
-    # коллекции, содержащей перечень всех user_id коллекции ugc-movies.film_likes.
-    count_docs = await motor_db.film_likes_user_ids.count_documents({})
-    cursor = motor_db.film_likes_user_ids.find(
-        {}, skip=random.randrange(0, count_docs - count, 1), limit=count
-    )
+    # Определяем общее количество уникальных пользователей, имеющих фильмы в закладках и создаем список
+    # из равномерно распределенных значений user_id общим количеством равным count.
+    total_user_id = await client.execute('SELECT count(DISTINCT user_id) FROM films_likes')
+    logger.info(total_user_id)
+    step = total_user_id[0][0] // count
     list_user_id = []
-    async for doc in cursor:
-        list_user_id.append(doc['_id'])
+    for offset in range(0, count * step, step):
+        user_id = await client.execute(
+            f'SELECT user_id FROM films_likes LIMIT 1 OFFSET {offset}'
+        )
+        list_user_id.append(str(user_id[0][0]))
     logger.debug('Got following list user_id: %s', list_user_id)
     # По полученному списку значений user_id выполняем запросы к базе данных и оцениваем среднее время
     # выполнения запросов
@@ -144,20 +162,16 @@ async def benchmark_get_list_favorite_films(count: int = 100) -> float:
     counter = 0
     logger.debug('Start iterating on list user_id...')
     for user_id in list_user_id:
-        list_favorite_films = []
+        query = f"SELECT film_id FROM films_likes WHERE user_id == '{user_id}'"
         timer.start()
-        cursor = motor_film_likes.find(
-            {'user_id': user_id, 'is_like': True}, {'film_id': 1, '_id': 0}
-        )
-        async for doc in cursor:
-            list_favorite_films.append(doc['film_id'])
+        result = await client.execute(query)
         elapsed_time = timer.stop()
         counter += 1
         logger.debug(
             'Elapsed time [%s] for result query #%s for benchmark_get_list_favorite_films: %s',
             elapsed_time,
             counter,
-            list_favorite_films,
+            result,
         )
     average_time = timer.timers['favorite_films'] / counter
     func_timer.stop()
@@ -178,21 +192,32 @@ async def benchmark_get_review_rating(count: int = 100) -> float:
     :param count: Количество запросов в базу данных для вычисления среднего значения времени запроса.
     :return: Среднее значение времени выполнения запроса.
     """
+    client = aioch.Client(
+        host=settings.CH.HOSTS[3],
+        port=settings.CH.PORT,
+        user=settings.CH.USER,
+        password=settings.CH.PASSWORD,
+        ca_certs=settings.CH.CACERT,
+        secure=True,
+    )
     logger.info('Start process measurement of benchmarks get review rating')
     func_timer = Timer('get_review_rating', logger=None)
     func_timer.start()
-    list_film_id = await motor_reviews.distinct('film_id')
+    list_film_id = await client.execute('SELECT DISTINCT film_id FROM films_reviews')
     logger.debug('Got following list film_id: %s', list_film_id)
     timer = Timer('review_rating', logger=None)
     counter = 0
     logger.debug('Start iterating on list film_id...')
-    for film_id in random.choices(list_film_id, k=count):
-        likes = []
+    for film_id, *_ in random.choices(list_film_id, k=count):
+        query_review = (
+            f'SELECT review_id, film_id, author, text_review, film_review_rating, created_at '
+            f"FROM films_reviews WHERE film_id == '{film_id}'"
+        )
         timer.start()
-        review = await motor_reviews.find_one({'film_id': film_id})
-        cursor = motor_review_likes.find({'review_id': review['review_id']})
-        async for doc in cursor:
-            likes.append(doc)
+        review = await client.execute(query_review)
+        likes = await client.execute(
+            f"SELECT * FROM review_likes WHERE review_id == '{review[0][0]}'"
+        )
         elapsed_time = timer.stop()
         counter += 1
         logger.debug(
@@ -216,15 +241,23 @@ async def benchmark_get_review_rating(count: int = 100) -> float:
 
 
 async def count_documents_in_collections():
-    reviews_count_documents = await motor_reviews.count_documents({})
-    bookmarks_count_documents = await motor_bookmarks.count_documents({})
-    film_likes_count_documents = await motor_film_likes.count_documents({})
-    review_likes_count_documents = await motor_review_likes.count_documents({})
+    client = aioch.Client(
+        host=settings.CH.HOSTS[3],
+        port=settings.CH.PORT,
+        user=settings.CH.USER,
+        password=settings.CH.PASSWORD,
+        ca_certs=settings.CH.CACERT,
+        secure=True,
+    )
+    reviews_count_documents = await client.execute('SELECT count() FROM films_reviews')
+    bookmarks_count_documents = await client.execute('SELECT count() FROM films_bookmarks')
+    film_likes_count_documents = await client.execute('SELECT count() FROM films_likes')
+    review_likes_count_documents = await client.execute('SELECT count() FROM review_likes')
     return {
-        'reviews': reviews_count_documents,
-        'bookmarks': bookmarks_count_documents,
-        'film_likes': film_likes_count_documents,
-        'review_likes': review_likes_count_documents,
+        'films_reviews': reviews_count_documents[0][0],
+        'films_bookmarks': bookmarks_count_documents[0][0],
+        'films_likes': film_likes_count_documents[0][0],
+        'review_likes': review_likes_count_documents[0][0],
     }
 
 
@@ -253,43 +286,40 @@ if __name__ == '__main__':
     benchmark_result_get_average_rating = loop.run_until_complete(task_get_average_rating)
     count_doc = loop.run_until_complete(task_count_documents)
 
-    motor_client.close()
-
     total_benchmarks = f"""
-## Результаты исследования по измерению скорости чтения и агрегации данных из базы данных MongoDB\n
+## Результаты исследования по измерению скорости чтения и агрегации данных из базы данных Clickhouse\n
 ### Структура кластера БД
-База данных запущена на облачной платформе Yandex.Cloud. Кластер содержит два шарда PRIMARY, без реплицирования.\n
+База данных запущена на облачной платформе Yandex.Cloud. Кластер содержит два шарда по две реплики.\n
 Топология кластера базы данных:\n
-![Топология БД](./images/mongodb-topology.png)\n
-Перечень и сводная информация по коллекциям базы данных ugc-movies:\n
-![Состав коллекций БД](./images/composition_of_collections.png)\n
-ER-диаграмма модели коллекций базы данных:\n
-![ER-диаграмма](./images/ugc_movies_model_diagram.png)\n
-В коллекциях настроено шардирование.\n
-Чтение из всех коллекций базы данных происходит одновременно и асинхронно, имитируя режим чтения из базы данных в \
-режиме реального времени.\n
+![Топология БД](./images/clickhouse_topology.png)\n
+Место, занимаемое таблицами базы данных на диске:
+![Место на диске шард 1](./images/clickhouse_database_size_part1.png)
+![Место на диске шард 2](./images/clickhouse_database_size_part2.png)
+Чтение из всех таблиц базы данных происходит одновременно и асинхронно, имитируя режим чтения из базы данных в
+режиме реального времени. Чтение осуществляется отдельными клиентами, подключающимися к разным хостам кластера.\n
 ### Результаты замеров времени выполнения запросов\n
 
 1. Получение списка понравившихся пользователю фильмов:\n
-  - среднее время выполнения запроса: **{benchmark_result_get_list_bookmarks*1000:.3f}** мс;\n
-  - количество документов в коллекции `{motor_bookmarks.full_name}`: **{count_doc['bookmarks']:,d}**;\n
+  - среднее время выполнения запроса: **{benchmark_result_get_list_bookmarks * 1000:.3f}** мс;\n
+  - количество записей в таблице `films_bookmarks`: **{count_doc['films_bookmarks']:,d}**;\n
 2. Получение информации о рецензии к фильму, включая получения списка лайков и дизлайков рецензии:\n
-  - среднее время выполнения запроса: **{benchmark_result_get_review_rating*1000:.3f} мс**;\n
-  - количество документов в коллекции `{motor_reviews.full_name}`: **{count_doc['reviews']:,d}**;\n
-  - количество документов в коллекции `{motor_review_likes.full_name}`: **{count_doc['review_likes']:,d}**;\n
+  - среднее время выполнения запроса: **{benchmark_result_get_review_rating * 1000:.3f} мс**;\n
+  - количество записей в таблице `films_reviews`: **{count_doc['films_reviews']:,d}**;\n
+  - количество записей в таблице `review_likes`: **{count_doc['review_likes']:,d}**;\n
 3. Получение списка понравившихся пользователю фильмов:\n
-  - среднее время выполнения запроса: **{benchmark_result_get_list_favorite_films*1000:.3f} мс**;\n
-  - количество документов в коллекции `{motor_film_likes.full_name}`: **{count_doc['film_likes']:,d}**;\n
+  - среднее время выполнения запроса: **{benchmark_result_get_list_favorite_films * 1000:.3f} мс**;\n
+  - количество записей в таблице `films_likes`: **{count_doc['films_likes']:,d}**;\n
 4. Получение средней пользовательской оценки и количества лайков и дизлайков у фильма:\n
-  - среднее время выполнения запроса: **{benchmark_result_get_average_rating*1000:.3f} мс**;\n
-  - количество документов в коллекции `{motor_film_likes.full_name}`: **{count_doc['film_likes']:,d}**;\n
+  - среднее время выполнения запроса: **{benchmark_result_get_average_rating * 1000:.3f} мс**;\n
+  - количество записей в таблице `films_likes`: **{count_doc['films_likes']:,d}**;\n
 
-Результаты замеров времени выполнения запросов к MongoDB учитывают задержки в сетевом соединении с БД.\n
+Результаты замеров времени выполнения запросов к Clickhouse учитывают задержки в сетевом соединении с БД.\n
 Оценка величины сетевых задержек:\n
-  - сервер MONGOINFRA#1: `{ping_host(hosts[0])}`\n
-  - сервер MONGOINFRA#2: `{ping_host(hosts[1])}`\n
-  - сервер MONGOINFRA#3: `{ping_host(hosts[2])}`\n
+  - сервер Clickhouse_shard1_replica1: `{ping_host(hosts[0])}`\n
+  - сервер Clickhouse_shard1_replica2: `{ping_host(hosts[1])}`\n
+  - сервер Clickhouse_shard2_replica1: `{ping_host(hosts[2])}`\n
+  - сервер Clickhouse_shard2_replica2: `{ping_host(hosts[3])}`\n
 """
 
-    with open('../mongodb_benchmark.md', 'w', encoding='utf-8') as file:
+    with open('../clickhouse_benchmark.md', 'w', encoding='utf-8') as file:
         print(total_benchmarks, file=file)
