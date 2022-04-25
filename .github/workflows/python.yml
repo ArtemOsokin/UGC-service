@@ -23,6 +23,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install wemake-python-styleguide
           pip install flake8-html
+          pip install mypy
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install -r event-api/requirements/api.txt
           
