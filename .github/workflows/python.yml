@@ -42,4 +42,5 @@ jobs:
           if-no-files-found: ignore
       - name: mypy checks
         run: |
+          pip install mypy
           mypy --install-types --non-interactive .
