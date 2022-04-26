@@ -49,3 +49,5 @@ jobs:
           mkdir ./event-api/src/app/.mypy_cache
           pip install mypy
           mypy --install-types --non-interactive ./event-api/src/app |& tee ./mypy_output
+          exit_code="${PIPESTATUS[0]}"
+          exit exit_code
