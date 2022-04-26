@@ -44,3 +44,4 @@ jobs:
         uses: jpetrucciani/mypy-check@0.930
         with:
           path: './event-api/src/app'
+          mypy_flags: '--install-types --non-interactive'
