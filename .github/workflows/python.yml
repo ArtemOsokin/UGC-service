@@ -23,16 +23,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install wemake-python-styleguide
           pip install flake8-html
-          pip install mypy
+          # pip install mypy
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install -r event-api/requirements/api.txt
+          # pip install -r event-api/requirements/api.txt
           
       - name: Lint with wemake-python-styleguide
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          flake8 ./event-api --count --select=E9,F63,F7,F82 --show-source --statistics --format=html --htmldir=flake-report
+          flake8 ./event-api/src/app --count --select=E9,F63,F7,F82 --show-source --statistics --format=html --htmldir=flake-report
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 ./event-api --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --format=html --htmldir=flake-report
+          flake8 ./event-api/src/app --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --format=html --htmldir=flake-report
       - name: Upload linter HTML report
         if: success() || failure()
         uses: actions/upload-artifact@v3
@@ -43,4 +43,4 @@ jobs:
       - name: Mypy Check
         uses: jpetrucciani/mypy-check@0.930
         with:
-          path: './event-api'
+          path: './event-api/src/app'
