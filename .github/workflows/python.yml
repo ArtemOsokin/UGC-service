@@ -40,7 +40,5 @@ jobs:
           name: Linter HTML report
           path: flake-report
           if-no-files-found: ignore
-      - name: mypy checks
-        run: |
-          pip install mypy
-          mypy --install-types --non-interactive .
+      - name: Mypy Check
+        uses: jpetrucciani/mypy-check@0.930
