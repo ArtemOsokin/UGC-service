@@ -25,7 +25,7 @@ jobs:
           pip install flake8-html
           # pip install mypy
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          # pip install -r event-api/requirements/api.txt
+          pip install -r event-api/requirements/api.txt
           
       - name: Lint with wemake-python-styleguide
         run: |
