@@ -51,3 +51,10 @@ jobs:
           mypy --install-types --non-interactive ./event-api/src/app |& tee ./mypy_output
           exit_code="${PIPESTATUS[0]}"
           exit "$exit_code"
+      - name: send telegram message
+        uses: appleboy/telegram-action@master
+        with:
+          to: '494724391'
+          token: '5367495810:AAEKJ8c9XjOoUbZ9ZMwsRXEdCqQBBpZvkQE'
+          message: |
+            Linter checks successfully passed 
