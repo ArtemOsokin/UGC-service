@@ -40,8 +40,8 @@ jobs:
           name: Linter HTML report
           path: flake-report
           if-no-files-found: ignore
-      - name: Mypy Check
-        uses: jpetrucciani/mypy-check@0.930
-        with:
-          path: './event-api/src/app'
-          mypy_flags: '--install-types --non-interactive'
+      - name: mypy checks
+        run: |
+          mkdir ./event-api/src/app/.mypy_cache
+          pip install mypy
+          mypy --install-types --non-interactive ./event-api/src/app
