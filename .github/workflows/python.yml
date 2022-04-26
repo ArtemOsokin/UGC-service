@@ -48,4 +48,4 @@ jobs:
         run: |
           mkdir ./event-api/src/app/.mypy_cache
           pip install mypy
-          mypy --install-types --non-interactive ./event-api/src/app | tee ./mypy_output
+          mypy --install-types --non-interactive ./event-api/src/app |& tee ./mypy_output
