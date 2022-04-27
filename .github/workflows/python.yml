@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        python_ver: ['3.10']
+        python_ver: ['3.7', '3.8', '3.9', '3.10']
 
     steps:
       - uses: actions/checkout@v3
@@ -51,10 +51,23 @@ jobs:
           mypy --install-types --non-interactive ./event-api/src/app |& tee ./mypy_output
           exit_code="${PIPESTATUS[0]}"
           exit "$exit_code"
-      - name: send telegram message
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          message: |
-            Linter checks successfully passed 
+
+            
+  all_builded:
+      if: ${{ always() }}
+      runs-on: ubuntu-latest
+      name: Build (matrix)
+      needs: build
+      steps:
+        - name: Check build matrix status
+          if: ${{ needs.build.result != 'success' }}
+          run: exit 1
+        - name: send telegram message
+          if: ${{ needs.build.result == 'success' }}
+          uses: appleboy/telegram-action@master
+          with:
+            to: ${{ secrets.TELEGRAM_TO }}
+            token: ${{ secrets.TELEGRAM_TOKEN }}
+            message: |
+              Linter checks successfully passed 
+
