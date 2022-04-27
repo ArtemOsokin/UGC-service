@@ -1,6 +1,5 @@
 version: '2.2'
 services:
-
     logstash:
         image: logstash:7.10.1
         depends_on:
@@ -13,11 +12,12 @@ services:
         volumes:
           - ./deploy/logstash.conf:/config/logstash.conf:ro
         command: logstash -f /config/logstash.conf
+        networks:
+          default:
 
     elasticsearch:
       image: elasticsearch:7.10.1
       environment:
-        # Указываем ES запуститься в одном экземпляре
         discovery.type: single-node
       ports:
         - 9200:9200
@@ -31,3 +31,7 @@ services:
       depends_on:
         - elasticsearch
 
+networks:
+  default:
+    external:
+      name: elk
