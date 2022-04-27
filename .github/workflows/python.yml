@@ -54,7 +54,7 @@ jobs:
       - name: send telegram message
         uses: appleboy/telegram-action@master
         with:
-          to: '494724391'
-          token: '5367495810:AAEKJ8c9XjOoUbZ9ZMwsRXEdCqQBBpZvkQE'
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
           message: |
             Linter checks successfully passed 
