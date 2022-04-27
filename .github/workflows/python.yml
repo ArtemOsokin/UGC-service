@@ -50,7 +50,7 @@ jobs:
           pip install mypy
           mypy --install-types --non-interactive ./event-api/src/app |& tee ./mypy_output
           exit_code="${PIPESTATUS[0]}"
-          exit 0
+          exit "$exit_code"
       - name: send telegram message
         uses: appleboy/telegram-action@master
         with:
