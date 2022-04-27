@@ -7,6 +7,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/configs:/etc/nginx/conf.d:ro
+      - /tmp/logs/nginx:/var/log/nginx
     ports:
       - "80:80"
     depends_on:
@@ -19,6 +20,8 @@ services:
       context: .
       dockerfile: Dockerfile.api.dev
     container_name: event-api
+    environment:
+      SENTRY_DSN: "https://007b983ed1e746a684b1b3a7848365a1@o1204239.ingest.sentry.io/6366147"
     ports:
       - "8080:8080"
     depends_on:
@@ -241,6 +244,20 @@ services:
     networks:
       backend_network:
 
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.3.2
+    volumes:
+      - /tmp/logs/nginx:/var/log/nginx:ro
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
+    depends_on:
+      - event-api
+      - nginx-ugc
+    networks:
+      default:
+
 networks:
   backend_network:
   web-service:
+  default:
+    external:
+      name: elk

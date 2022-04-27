@@ -1,16 +1,19 @@
 import logging
 from logging import config as logging_config
 
+import logstash
+import sentry_sdk
 import uvicorn as uvicorn
-from fastapi import Depends, FastAPI
-from fastapi.responses import ORJSONResponse
-
 from app.api.v1 import ugc_events
+from app.core.config import sentry_dsn
 from app.core.config import settings
 from app.core.logger import LOGGING
 from app.core.oauth import decode_jwt
 from app.db.kafka_storage import kafka_producer
 from app.jaeger_service import init_tracer
+from fastapi import Depends, FastAPI
+from fastapi.responses import ORJSONResponse
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 logging_config.dictConfig(LOGGING)
 
@@ -23,6 +26,19 @@ app = FastAPI(
 )
 
 init_tracer(app)
+app.logger = logging.getLogger(__name__)
+app.logger.setLevel(logging.INFO)
+
+app.logger.addHandler(logstash.LogstashHandler('logstash', 5044, version=1))
+
+sentry_logging = LoggingIntegration(
+    level=logging.INFO,  # Capture info and above as breadcrumbs
+    event_level=logging.ERROR  # Send errors as events
+)
+sentry_sdk.init(
+    sentry_dsn,
+    traces_sample_rate=1.0
+)
 
 
 @app.on_event('startup')

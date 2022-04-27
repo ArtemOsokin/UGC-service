@@ -4,6 +4,7 @@ from app.core.dev import DevelopmentSettings
 from app.core.prod import ProductionSettings
 
 runtime_settings = os.environ.get('SETTINGS', 'dev')
+sentry_dsn = os.environ.get('SENTRY_DSN')
 
 runtime_classes = {
     'dev': DevelopmentSettings,
