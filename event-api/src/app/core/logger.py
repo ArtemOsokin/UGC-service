@@ -1,7 +1,7 @@
 from app.core.config import settings
 
 LOG_DEFAULT_HANDLERS = [
-    'console',
+    'default'
 ]
 
 LOGGING = {
@@ -30,18 +30,21 @@ LOGGING = {
         },
         'default': {
             'formatter': 'default',
-            'class': 'logging.StreamHandler',
-            'stream': 'ext://sys.stdout',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'logconfig.log',
+            'maxBytes': 1024,
         },
         'access': {
             'formatter': 'access',
-            'class': 'logging.StreamHandler',
-            'stream': 'ext://sys.stdout',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'logconfig.log',
+            'maxBytes': 1024,
         },
         'services': {
             'formatter': 'verbose',
-            'class': 'logging.StreamHandler',
-            'stream': 'ext://sys.stdout',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'logconfig.log',
+            'maxBytes': 1024,
         },
     },
     'loggers': {

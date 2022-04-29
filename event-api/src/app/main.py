@@ -29,7 +29,7 @@ app = FastAPI(
 init_tracer(app)
 app.logger = logging.getLogger(__name__)
 app.logger.setLevel(logging.INFO)
-app.logger.addHandler(logstash.LogstashHandler('logstash', 5046, version=1))
+app.logger.addHandler(logstash.LogstashHandler('logstash', 5044, version=1))
 
 sentry_logging = LoggingIntegration(
     level=logging.INFO,  # Capture info and above as breadcrumbs
