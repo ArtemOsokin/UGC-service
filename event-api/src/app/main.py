@@ -11,9 +11,10 @@ from app.core.logger import LOGGING
 from app.core.oauth import decode_jwt
 from app.db.kafka_storage import kafka_producer
 from app.jaeger_service import init_tracer
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import ORJSONResponse
 from sentry_sdk.integrations.logging import LoggingIntegration
+
 
 logging_config.dictConfig(LOGGING)
 
@@ -28,8 +29,7 @@ app = FastAPI(
 init_tracer(app)
 app.logger = logging.getLogger(__name__)
 app.logger.setLevel(logging.INFO)
-
-app.logger.addHandler(logstash.LogstashHandler('logstash', 5044, version=1))
+app.logger.addHandler(logstash.LogstashHandler('logstash', 5046, version=1))
 
 sentry_logging = LoggingIntegration(
     level=logging.INFO,  # Capture info and above as breadcrumbs
@@ -39,6 +39,17 @@ sentry_sdk.init(
     sentry_dsn,
     traces_sample_rate=1.0
 )
+
+
+@app.middleware('http')
+async def log(request: Request, call_next):
+    response = await call_next(request)
+    request_id = request.headers.get('X-Request-Id')
+    custom_logger = logging.LoggerAdapter(
+        app.logger, extra={'tag': 'event', 'request_id': request_id}
+    )
+    custom_logger.info(request)
+    return response
 
 
 @app.on_event('startup')
